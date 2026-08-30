@@ -1,0 +1,19 @@
+
+osi model - 7 layers, top to bottom
+7. application - http, ftp, dns, smtp (what app code touches)
+6. presentation - encoding, compression, encryption (formatting the data)
+5. session - managing/maintaining a session between two hosts
+4. transport - tcp/udp, ports, reliability, ordering, flow control
+3. network - ip addressing and routing (routers)
+2. data link - mac addressing, frames (switches, ethernet)
+1. physical - bits over wire/radio/fiber
+
+mnemonic: Please Do Not Throw Sausage Pizza Away
+
+note: osi model is a reference/teaching model, not literally how real stacks are built
+real world uses the simpler TCP/IP model (4 layers): link, internet, transport, application
+- session + presentation aren't really separate layers in practice, mostly folded into
+  application layer or handled by libraries (e.g. TLS)
+
+why it matters: gives a shared vocabulary for "which layer is this problem at"
+e.g. cant ping = network layer, dns not resolving = application layer, cable unplugged = physical

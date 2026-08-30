@@ -1,0 +1,40 @@
+building a secure backend app - owasp top 10 (the enduring themes, not just the 2021 list)
+
+1. broken access control - user can do/see things they shouldn't (e.g. change ?id=123 to
+   ?id=124 and see someone else's data - "insecure direct object reference"). fix: always
+   check the AUTHENTICATED user is authorized for the SPECIFIC resource, server-side, every
+   request - never trust a client-supplied id alone
+
+2. cryptographic failures - sensitive data (passwords, tokens, pii) stored/transmitted without
+   proper encryption, weak/outdated algorithms, hardcoded keys. fix: tls everywhere (see
+   protocols/tls.md), hash passwords with bcrypt/argon2 (never plain/reversible), don't log
+   secrets
+
+3. injection - untrusted input concatenated into a query/command (sql injection classic
+   example: `"SELECT * FROM users WHERE id = " + userInput`). fix: parameterized
+   queries/prepared statements, never string-concat user input into a query
+
+4. insecure design - the vulnerability is in the ARCHITECTURE, not a bug - e.g. no rate
+   limiting on a password reset endpoint. fix: threat model during design, not just code review
+
+5. security misconfiguration - default credentials left on, verbose error messages leaking
+   stack traces, unnecessary features/ports exposed, missing security headers
+
+6. vulnerable and outdated components - using a library/framework version with a known cve.
+   fix: dependency scanning, keep things patched
+
+7. identification and authentication failures - weak password policies, no rate limiting on
+   login (brute force), session tokens that don't expire/rotate, predictable session ids -
+   see jwt-pros-n-cons.txt
+
+8. software and data integrity failures - trusting data/code from an unverified source (e.g.
+   an unsigned software update, or deserializing untrusted data)
+
+9. security logging and monitoring failures - a breach happens and nobody notices for months
+   because nothing was logged/alerted on
+
+10. server-side request forgery (ssrf) - app fetches a url based on user input, attacker
+    points it at an internal-only endpoint (e.g. cloud metadata service) the app can reach but
+    the attacker normally couldn't
+
+related: protocols/tls.md, protocols/https-tls-keys-certificates.md, jwt-pros-n-cons.txt

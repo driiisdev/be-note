@@ -1,0 +1,21 @@
+
+what is a protocol
+- agreed-upon rules for how systems format, send, and receive data
+- both sides must implement the same rules or they can't understand each other
+
+a protocol defines
+- syntax: format/structure of the data
+- semantics: what each part means
+- timing: order of messages, what happens when
+
+protocols are layered
+- protocols stack on top of each other
+- each layer trusts the layer below to deliver its bytes and focuses on its own job
+- e.g. HTTP -> TCP -> IP -> Ethernet
+
+examples
+- HTTP, DNS, FTP, SMTP, SSH, TLS, TCP, UDP, IP
+
+open (RFC, public spec, anyone can implement) vs proprietary protocols
+
+related: osi model (formalizes the layers), internet protocol (the layer most transport/app protocols ride on)

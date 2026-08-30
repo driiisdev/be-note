@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>LLM-style streaming demo</title>
+    <style>
+      body { font-family: sans-serif; max-width: 500px; margin: 40px auto; }
+      #output { border: 1px solid #ccc; padding: 12px; min-height: 100px; line-height: 1.5; }
+      button { margin-bottom: 12px; }
+    </style>
+  </head>
+  <body>
+    <h3>LLM-style token streaming (via SSE-over-fetch, not EventSource)</h3>
+    <button id="go">Send prompt</button>
+    <div id="output"></div>
+
+    <script>
+      // same reason as client-fetch.js: EventSource can't POST, so this hand-rolls sse
+      // parsing over fetch() + a ReadableStream reader instead
+      document.getElementById("go").addEventListener("click", async () => {
+        const output = document.getElementById("output");
+        output.textContent = "";
+
+        const response = await fetch("http://localhost:8100/chat", { method: "POST" });
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+
+          let boundary;
+          while ((boundary = buffer.indexOf("\n\n")) !== -1) {
+            const frame = buffer.slice(0, boundary);
+            buffer = buffer.slice(boundary + 2);
+            const payload = frame.replace(/^data: /, "");
+            if (payload === "[DONE]") return;
+            output.textContent += payload + " "; // each word appears the instant it arrives
+          }
+        }
+      });
+    </script>
+  </body>
+</html>

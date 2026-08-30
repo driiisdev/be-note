@@ -1,0 +1,24 @@
+
+TLS - transport layer security
+cryptographic protocol - confidentiality (encryption), integrity (tamper detection),
+authentication (who am i actually talking to)
+
+successor to SSL (SSL is broken/deprecated now, people still say "ssl cert" out of habit)
+
+runs on top of tcp usually (DTLS = udp version, QUIC has TLS 1.3 built directly in)
+
+handshake (simplified, TLS 1.2 style)
+- ClientHello: supported tls versions + cipher suites
+- ServerHello: chosen cipher suite + server's certificate
+- key exchange (ECDHE preferred - gives forward secrecy, old RSA key exchange doesn't)
+- both sides derive the same session key without sending it over the wire
+- Finished messages, then application data flows encrypted
+
+TLS 1.3
+- faster handshake (1-RTT, sometimes 0-RTT for resumed connections)
+- dropped old/weak ciphers, always uses (EC)DHE
+
+asymmetric crypto (slow) only used briefly to set up the handshake / exchange keys
+symmetric crypto (fast) used for the actual bulk data after that
+
+certificates get used during the handshake to prove server identity (see https/certs notes)

@@ -1,0 +1,29 @@
+
+HTTPS = HTTP + TLS (running over tcp, or over quic for http/3)
+
+public/private key pair (asymmetric crypto)
+- private key: stays secret on the server, never leaves
+- public key: shared with everyone, embedded in the certificate
+- what one key encrypts only the other can decrypt (and vice versa for signing)
+
+certificate
+- binds a public key to an identity (the domain name)
+- issued and signed by a Certificate Authority (CA)
+
+chain of trust
+- root CA -> intermediate CA -> leaf/server cert
+- os/browser ships a trust store of root CAs it already trusts
+- if the chain traces back to one of those roots, the cert is trusted
+
+what the browser checks
+- hostname matches the cert
+- not expired
+- signature chain verifies up to a trusted root
+- not revoked (CRL / OCSP)
+
+self-signed cert = no CA in the chain -> browser warns, fine for local dev only
+
+Let's Encrypt / ACME protocol - free automated cert issuance, why almost everything is https now
+
+why it matters: without it, anything on the network path (public wifi, isp, etc) could read
+or modify traffic - https gives confidentiality + integrity + server authenticity

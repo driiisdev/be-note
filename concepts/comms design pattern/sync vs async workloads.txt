@@ -1,0 +1,23 @@
+synchronous i/o
+- caller sends a request and blocks
+- caller cannot execute any code meanwhile
+- receiver responds, caller unblocks
+- caller and receiver are in sync
+
+example of an os synchronous i/o
+- program asks os to read from disk
+- program main thread is taken off of the cpu
+- read completes, program can resume execution
+
+asychronous i/o
+- caller sends a request
+- caller can work until it gets a response
+- caller either:
+  . checks if the response is ready(epoll)
+  . receiver calls back when its done (io_uring)
+  . spins up a new thread that blocks
+- caller and receiver are not necessary in sync
+
+example of an os asychronous call (nodejs)
+- program spins up a secondary thread
+- secondary thread reads fro

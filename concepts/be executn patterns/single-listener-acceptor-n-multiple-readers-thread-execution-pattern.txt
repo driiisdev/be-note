@@ -1,0 +1,25 @@
+pattern B: single listener/acceptor thread + multiple reader threads
+
+ONE dedicated thread is the Listener+Acceptor (loops calling accept()), but each newly
+accepted connection gets HANDED OFF to a separate READER thread - either a new thread per
+connection ("thread-per-connection") or a thread pulled from a pre-allocated reader pool
+
+improves on pattern A: accepting new connections no longer blocked behind slow reading/
+processing of EXISTING ones - the acceptor's only job is to keep pulling new connections off
+the backlog as fast as possible and dispatch them
+
+thread-per-connection
+- simple to reason about (each connection has "its own" thread, straightforward blocking
+  reads, no juggling multiple connections on one thread)
+- doesn't scale to huge numbers of concurrent connections (the "c10k problem") - each os
+  thread has real memory overhead (stack size, kernel scheduling structures), thousands of
+  threads = context-switch overhead dominates
+
+reader thread POOL (bounded)
+- caps resource usage, but a reader thread may now own MULTIPLE connections' reads at once -
+  needs non-blocking io + multiplexing (epoll etc) WITHIN each reader thread - starts to
+  resemble a "multi-reactor" design
+
+still only ONE acceptor thread - under very high connection CHURN (huge numbers of NEW
+connections/sec, e.g. a thundering-herd scenario) the single acceptor itself can become the
+bottleneck (accept() calls aren't free) - this is exactly what pattern D fixes

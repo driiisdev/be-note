@@ -1,0 +1,32 @@
+websocket proxying
+
+websockets start as a normal http request (the Upgrade handshake - see protocols/
+websockets.md) - a proxy has to specifically support forwarding this Upgrade request and the
+101 Switching Protocols response correctly. lots of older/misconfigured proxies don't pass
+through Upgrade/Connection headers by default and silently break websocket connections
+
+once upgraded, the connection is no longer "one request, one response" - it's long-lived,
+bidirectional, stateful, can carry frames both ways for hours. a proxy handling this has to
+switch from "parse one http request, forward, get one response, done" into "relay raw bytes
+bidirectionally until either side closes" - much closer to how an L4 proxy behaves, even
+though the connection STARTED as http
+
+sticky sessions / connection affinity
+- because the connection is stateful and long-lived, the SAME backend instance has to keep
+  handling it for its entire lifetime
+- can't load-balance individual ws MESSAGES round-robin across backends the way you might
+  route independent http requests - the backend that accepted the connection is the only one
+  with the in-memory state (subscriptions, session data) for that client
+- ties to comms design pattern/stateful vs stateless.md directly
+- techniques: ip-hash routing (same client ip -> same backend), cookie-based affinity (lb
+  sets a cookie naming which backend handled the initial connection), consistent hashing
+
+timeouts
+- ws connections can sit IDLE for long periods with no data flowing
+- proxies/lbs often have default idle-connection timeouts assuming a quiet connection is dead
+  - will silently kill a legit ws connection unless configured with a longer timeout, or the
+    app uses ping/pong keepalive (see protocols/websockets.md) to look "active"
+
+scaling across multiple backends (instead of relying purely on stickiness)
+- needs a pub/sub backplane (comms design pattern/pub-sub.md) so a message published on
+  backend A can still reach a client connected to backend B

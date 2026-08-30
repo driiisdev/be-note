@@ -1,0 +1,3 @@
+backend idempotency?
+nagles algo?
+when to use threads?

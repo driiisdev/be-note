@@ -1,0 +1,25 @@
+
+gRPC - RPC framework by google, built on http/2
+
+uses Protocol Buffers (protobuf) as the interface definition language + binary wire format
+- define a .proto file: service + methods + request/response message types
+- codegen produces client + server stub code in whatever language
+
+4 call types (all possible because http/2 gives multiplexed streams)
+- unary: one request, one response (normal rpc feel)
+- server streaming: one request, stream of responses
+- client streaming: stream of requests, one response
+- bidirectional streaming: both sides stream
+
+schema-first / strongly typed contract vs REST's loosely typed json
+- mismatches caught at codegen/compile time instead of at runtime
+
+perf: binary protobuf is smaller + faster to (de)serialize than json, http/2 multiplexing
+avoids opening a pile of connections
+
+used for: internal service-to-service (microservice) communication where you control both
+ends and want speed + type safety
+
+not great for: public browser-facing apis directly - browsers can't easily do what grpc needs
+over http/2 (trailers etc), so grpc-web + a proxy is needed to bridge that gap. REST/json
+stays simpler for anything a browser calls directly.

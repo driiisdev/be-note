@@ -1,0 +1,24 @@
+https over tcp with tls 1.2 - the slow baseline
+
+flights (t in units of 0.5 RTT):
+t=0    client -> SYN
+t=0.5  server -> SYN-ACK
+t=1.0  client -> ACK + ClientHello
+t=1.5  server -> ServerHello, Certificate, ServerKeyExchange, ServerHelloDone
+t=2.0  client -> ClientKeyExchange, ChangeCipherSpec, Finished
+t=2.5  server -> ChangeCipherSpec, Finished
+t=3.0  client -> NOW sends the actual HTTP request (handshake finally done)
+t=3.5  server -> HTTP response
+t=4.0  client receives first response byte
+
+= 4 RTT total. TCP handshake (1 RTT) + TLS 1.2 full handshake (2 RTT) + request/response (1 RTT)
+
+why 2 RTT for the tls part: server can't finish in one flight because ITS Finished message
+depends on stuff the client only sends back in flight 3 - two round trips of back-and-forth
+before either side is sure the other has the right keys
+
+tls1.2 DOES have an abbreviated/resumed handshake (session id or session ticket) that skips
+the cert exchange - drops to 1 RTT for the tls part (3 RTT total) - but no 0-RTT concept,
+client still has to wait for the abbreviated handshake to finish before sending real data
+
+this is why tls1.2 is the slowest option in this whole module - nothing here overlaps

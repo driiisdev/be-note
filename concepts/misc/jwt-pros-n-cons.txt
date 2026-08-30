@@ -1,0 +1,35 @@
+jwt (json web tokens) - pros and cons
+
+what it is: header.payload.signature, base64url encoded, signed (not encrypted by default -
+anyone can DECODE and read the payload, they just can't forge a valid signature without the
+key). carries "claims" - arbitrary data like user id, roles, expiry (exp)
+
+pros
+- STATELESS auth - server verifies the signature, doesn't need to look up a session in a
+  db/cache - see comms design pattern/stateful vs stateless.md, this is the concrete
+  application of that concept to auth
+- scales horizontally trivially - any server instance can verify a jwt independently, no
+  shared session store needed, no sticky sessions needed (contrast with the websocket sticky
+  session problem in proxy n load balancing/websocket-proxying.md - jwt auth specifically
+  avoids that class of problem)
+- can carry arbitrary claims (roles, permissions) - avoids an extra db lookup per request just
+  to know what the user is allowed to do
+- works across domains/services easily - any microservice with the public key (or shared
+  secret) can verify it independently
+
+cons
+- CANNOT be revoked before expiry without extra infrastructure (a blocklist/revocation list) -
+  which reintroduces the exact statefulness jwt was supposed to avoid. if a token is stolen or
+  a user is banned, it's still valid until it expires unless you build a revocation system
+- token size - bigger than a simple session id, sent on EVERY request (in a header usually)
+- if the signing key leaks, EVERY token ever issued with it is forgeable
+- payload is just base64, not encrypted - never put secrets in a plain jwt (use jwe if you
+  need actual encryption, not just jws signing)
+- expiry tradeoff: short expiry = safer but needs refresh-token complexity; long expiry =
+  bigger window if a token is stolen
+
+practical middle ground: short-lived access token (jwt, stateless) + longer-lived refresh
+token (stored server-side, CAN be revoked) - most real systems do this, not pure stateless jwt
+
+related: comms design pattern/stateful vs stateless.md, building-secure-be-app-owasp.txt
+(auth failures category)

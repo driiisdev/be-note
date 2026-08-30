@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>WebRTC data channel demo</title>
+    <style>
+      body { font-family: sans-serif; max-width: 500px; margin: 40px auto; }
+      #log { border: 1px solid #ccc; padding: 8px; height: 220px; overflow-y: auto; }
+      #log p { margin: 2px 0; }
+      #status { font-weight: bold; }
+    </style>
+  </head>
+  <body>
+    <h3>WebRTC data channel demo</h3>
+    <p>Open this page in two tabs (same room). Once <span id="status">connecting…</span>
+      turns "connected", type below to send messages <strong>peer-to-peer</strong> —
+      not through this server.</p>
+    <div id="log"></div>
+    <input id="input" placeholder="type a message, press enter" style="width: 100%" disabled />
+
+    <script>
+      const room = new URLSearchParams(location.search).get("room") || "default";
+      const log = document.getElementById("log");
+      const input = document.getElementById("input");
+      const status = document.getElementById("status");
+
+      function line(text) {
+        const p = document.createElement("p");
+        p.textContent = text;
+        log.appendChild(p);
+        log.scrollTop = log.scrollHeight;
+      }
+
+      // STUN only (no TURN) - enough for two tabs on the same machine/network to find each
+      // other. A real deployment behind restrictive NATs would also need a TURN server.
+      const pc = new RTCPeerConnection({
+        iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+      });
+
+      let dataChannel;
+
+      function setupDataChannel(channel) {
+        dataChannel = channel;
+        dataChannel.onopen = () => {
+          status.textContent = "connected";
+          input.disabled = false;
+          line("(data channel open - this is now peer-to-peer, signaling server not involved)");
+        };
+        dataChannel.onmessage = (e) => line("< " + e.data);
+      }
+
+      // signaling: relay-only server from signaling-server.js, joined by room name
+      const signaling = new WebSocket(`ws://localhost:3400?room=${room}`);
+
+      signaling.onopen = () => line(`(joined signaling room "${room}")`);
+
+      signaling.onmessage = async (event) => {
+        const msg = JSON.parse(event.data);
+
+        if (msg.type === "peer-joined") {
+          // we were here first - we become the offerer
+          const channel = pc.createDataChannel("chat");
+          setupDataChannel(channel);
+          const offer = await pc.createOffer();
+          await pc.setLocalDescription(offer);
+          signaling.send(JSON.stringify({ type: "offer", sdp: offer }));
+        } else if (msg.type === "offer") {
+          // we're the second peer - become the answerer
+          pc.ondatachannel = (e) => setupDataChannel(e.channel);
+          await pc.setRemoteDescription(msg.sdp);
+          const answer = await pc.createAnswer();
+          await pc.setLocalDescription(answer);
+          signaling.send(JSON.stringify({ type: "answer", sdp: answer }));
+        } else if (msg.type === "answer") {
+          await pc.setRemoteDescription(msg.sdp);
+        } else if (msg.type === "ice-candidate") {
+          await pc.addIceCandidate(msg.candidate);
+        }
+      };
+
+      // as ICE discovers candidate paths, relay each one through signaling
+      pc.onicecandidate = (event) => {
+        if (event.candidate) {
+          signaling.send(JSON.stringify({ type: "ice-candidate", candidate: event.candidate }));
+        }
+      };
+
+      pc.oniceconnectionstatechange = () => line(`(ice state: ${pc.iceConnectionState})`);
+
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && input.value && dataChannel) {
+          dataChannel.send(input.value);
+          line("> " + input.value);
+          input.value = "";
+        }
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,31 @@
+layer 4 vs layer 7 load balancers (see protocols/osi-model.md for the layer numbers)
+
+layer 4 (transport) load balancing
+- operates on ip address + port only (tcp/udp level) - never looks inside the payload
+- routing decisions based on: source/dest ip, port, basic tcp flags - NOT http content
+- doesn't understand http at all - just forwards packets/connections based on a simple algo
+  (round robin, least connections, ip hash)
+- fast, low overhead, low latency - no protocol parsing needed, handles huge throughput
+- CANNOT do content-aware routing - can't route /api/users differently from /api/orders,
+  can't look at cookies/headers
+- usually either NATs the packet (rewrites dest ip to chosen backend) or uses direct server
+  return (DSR) for even lower latency
+- examples: aws network load balancer (nlb), ipvs/lvs, a basic tcp load balancer
+
+layer 7 (application) load balancing
+- operates on the actual application protocol content - for http, fully terminates the
+  tcp/tls connection, parses the http request, can inspect path/headers/cookies/method/body
+- CAN make content-aware routing decisions - route by path, by host header (multi-tenant),
+  by cookie (session affinity), a/b testing/canary based on headers
+- also does: tls termination, request/response rewriting, compression, caching
+- higher overhead than l4 - has to fully parse/buffer the request (and terminate tls) before
+  routing - effectively acts as BOTH a server (to client) and a client (to backend) - TWO
+  separate tcp connections, not just packet forwarding
+- examples: nginx, haproxy (l7 mode), aws application load balancer (alb), envoy
+
+tradeoff: l4 = fast, dumb, high throughput, no content awareness. l7 = slower, smart,
+content-aware, needed for most modern microservices/api gateway use cases
+
+often used TOGETHER in real architectures: l4 lb at the edge (handles raw connection volume)
+distributing to a pool of l7 lbs/reverse proxies, which do the smart http-aware routing to
+actual app servers - e.g. aws nlb in front of an nginx/envoy fleet

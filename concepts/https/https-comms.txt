@@ -1,0 +1,26 @@
+https-comms - overview of this whole module
+
+question this module answers: "how many round trips does it actually take before the client
+gets the first byte of a real response back, over https?" - and how does each new
+mechanism (tls1.3, 0-rtt, tcp fast open, quic) shave another round trip off that
+
+unit: RTT = one full round trip. a "flight" = a batch of messages sent together before
+waiting for a reply. count in units of 0.5 RTT per one-way trip.
+
+the 6 variants covered in this module, slowest to fastest:
+1. tcp + tls1.2 (full handshake) - baseline, 4 RTT to first response byte
+2. tcp + tls1.3 (full handshake) - 3 RTT (tls1.3 collapsed its own handshake to 1 RTT)
+3. tcp + tls1.3 + 0-RTT (resumed w/ early data) - 2 RTT (request rides the first flight)
+4. tcp fast open (tfo) + tls1.3 + 0-RTT - 1 RTT (even the tcp handshake carries the request)
+5. quic / http-3 (fresh connection) - 2 RTT (no separate tcp handshake needed at all)
+6. quic / http-3 + 0-RTT (resumed) - 1 RTT (same floor as tfo, no OS cookie needed)
+
+important nuance: plain tls1.3 SESSION RESUMPTION without 0-RTT does NOT save a round trip
+vs a fresh tls1.3 handshake - both are 1 RTT of handshake. resumption alone only saves CPU
+(skips certificate verify/signing). the RTT saving specifically comes from 0-RTT/early data.
+
+all of this is orthogonal to the actual server processing time - assumes the server answers
+instantly, so it isolates just the "connection setup tax" being paid before real work starts
+
+related: concepts/protocols/tls.md (handshake basics), concepts/protocols/https-tls-keys-certificates.md
+(certs), concepts/protocols/http-3.md (quic basics), concepts/protocols/tcp.md

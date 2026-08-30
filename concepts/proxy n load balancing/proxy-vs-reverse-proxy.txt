@@ -1,0 +1,28 @@
+forward proxy vs reverse proxy
+
+forward proxy
+- sits in front of CLIENTS, acts on their behalf when talking to servers
+- client explicitly configures/knows about it (browser proxy settings, corp network config)
+- server doesn't know/care it's a proxy - just sees requests coming from the proxy's ip
+- use cases: content filtering (corp network blocking sites), caching (isp-level), anonymity
+  (hide client's real ip from the destination), bypassing geo-restrictions
+- client trusts the proxy; destination server sees the PROXY's ip, not the client's
+
+reverse proxy
+- sits in front of SERVERS, acts on their behalf when talking to clients
+- client doesn't know/care - from client's pov the reverse proxy IS the server
+- server(s) behind it are configured to trust/expect it
+- use cases: load balancing across backend instances, tls termination (centralize cert mgmt),
+  caching near the edge, security (hide internal topology, absorb ddos, waf filtering),
+  compression
+- examples: nginx, haproxy, cloudflare, aws alb/elb
+
+key distinction
+| | forward proxy | reverse proxy |
+| acts on behalf of | client | server |
+| client aware? | yes (configured) | no (transparent) |
+| server aware? | no (sees proxy ip) | yes (configured to trust it) |
+| hides | client identity from server | server topology from client |
+
+related: protocols/tls.md (tls termination), comms design pattern/sidecar pattern.md (a
+reverse proxy is basically a sidecar at the edge instead of per-service)

@@ -1,0 +1,27 @@
+
+TCP - transmission control protocol, transport layer (osi layer 4)
+connection-oriented, reliable, ordered, byte-stream, full duplex
+
+3-way handshake (before any data flows)
+- client -> server: SYN
+- server -> client: SYN-ACK
+- client -> server: ACK
+connection now established
+
+reliability
+- every byte gets a sequence number
+- receiver sends ACKs
+- sender retransmits anything not ACKed in time (packet loss handled automatically)
+
+ordering
+- receiver reassembles segments in sequence order even if they arrived out of order
+
+flow control - sliding window, receiver tells sender how much it can buffer
+congestion control - slow start etc, avoids overwhelming the network
+
+closing - 4 way (FIN, ACK, FIN, ACK) since either side can finish independently
+
+cost of all this: handshake = latency before first byte, and head-of-line blocking -
+if one segment is lost, everything behind it waits for the retransmit even if it already arrived
+
+used by: http/1.1, http/2, ssh, ftp, smtp, most things that need "just work correctly"

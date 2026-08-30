@@ -1,0 +1,20 @@
+pattern A: single listener + acceptor + reader thread
+
+ONE thread does everything - listens, accepts (blocking accept() in a loop), reads/processes
+each connection's data - all sequentially, on the same thread
+
+totally sequential - if the thread is busy processing connection #1's data, it CANNOT accept
+a new connection #2, or read more data from ANY other already-open connection, because
+there's only one thread and it's occupied
+
+simplest possible model, extremely limited scalability - effectively single-connection-at-
+a-time throughput unless every connection's work is trivially fast
+
+real-world relevance: basically a naive single-threaded blocking server (toy/teaching
+example) - almost never used for real concurrent production traffic, but it's the starting
+point every other pattern in this module improves on
+
+important nuance: node.js's event loop LOOKS similar (single thread) but is fundamentally
+different - node uses non-blocking io + an event loop (epoll/kqueue under the hood), so one
+thread can service MANY connections concurrently by never blocking on any single one. this
+pattern A is specifically about BLOCKING io on one thread - the naive version, not node's model

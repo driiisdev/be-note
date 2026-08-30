@@ -1,0 +1,22 @@
+pattern D: multiple acceptor threads on a single (shared) socket
+
+multiple threads ALL call accept() on the SAME listening socket concurrently - the fd is
+shared across threads since they're all part of one process
+
+why: under high connection churn, ONE acceptor thread can become the bottleneck (accept()
+has real per-call overhead, only one accept() completes at a time per thread) - N threads all
+blocked in accept() on the same socket means the os can wake up ANY of them when a new
+connection completes its handshake, parallelizing the "pull off the backlog" work itself
+
+os handles fairness/wakeup - historically had a "thundering herd" problem (ALL waiting
+acceptor threads wake up for EVERY new connection, even though only one can actually claim
+it, wasting cpu on the losers) - modern kernels (linux since ~2.6) mitigate this with
+wake-one semantics for accept() on a shared socket
+
+still needs SOME reader strategy after accepting - this pattern is specifically about scaling
+the ACCEPT step, orthogonal to how reading/processing is then organized (usually paired with
+pattern B or C's reader strategy)
+
+vs pattern E: here there's still only ONE listening socket / backlog queue shared by all the
+acceptor threads - they're all pulling from the same queue, which is still a point of
+contention under extreme load

@@ -1,0 +1,6 @@
+node_modules
+.claude
+
+# locally generated self-signed certs/keys from practice projects
+practice/protocols/tls-https/*.pem
+practice/https/connection-establishment/*.pem

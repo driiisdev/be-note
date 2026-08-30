@@ -1,0 +1,23 @@
+https over QUIC + 0-RTT (resumed)
+
+prerequisite: psk from an earlier quic session with this exact server (same idea as tls1.3
+0-RTT over tcp, but quic doesn't need a separate cookie mechanism the way tfo does - 0-RTT
+was a first-class part of quic's design from day one)
+
+flights:
+t=0    client -> Initial packet: ClientHello(psk+early_data) + encrypted early app data
+               (the actual http request), all together
+t=0.5  server -> decrypts early data, processes the request, sends back handshake completion
+               AND the actual response, together
+t=1.0  client receives the response
+
+= 1 RTT total. same floor as tcp fast open + tls1.3 0-RTT, but reached WITHOUT needing:
+  - OS-level kernel support for a special cookie mechanism (tfo)
+  - hoping middleboxes on the path don't choke on data-carrying SYN packets
+
+this is a big part of why quic/http3 won out over investing further in tfo - it gets to the
+same "1 RTT, request-and-response-in-one-round-trip" destination, but entirely in userspace,
+portably, without depending on network middleboxes cooperating
+
+same replay caveat as tls1.3 0-RTT applies - early data isn't forward-secure, only safe for
+idempotent requests unless the app defends against replay itself

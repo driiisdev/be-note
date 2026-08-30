@@ -1,0 +1,21 @@
+pattern C: single listener/acceptor/reader thread + worker pool, message load balancing
+
+still ONE thread doing Listen+Accept+Read (owns reading raw bytes off every connection), but
+once a COMPLETE MESSAGE has been read/framed, the actual PROCESSING (business logic) gets
+handed off / load-balanced to a pool of WORKER threads
+
+splits by STAGE (io vs processing), not by connection - the io thread stays maximally
+responsive to reading MORE data from MANY connections (non-blocking/event-loop under the
+hood) while a worker pool chews through the actual computation in parallel across cores
+
+= "reactor pattern with a worker thread pool" - extremely common in real high-perf servers
+(netty's eventloopgroup + separate business-logic executor; node's own libuv threadpool
+handling fs/crypto/dns while the js event loop itself stays single-threaded for io)
+
+vs pattern B: pattern B splits by CONNECTION (each reader thread owns some connections
+entirely - reading AND processing); pattern C splits by STAGE (one thread/pool does ALL the
+reading for EVERY connection, a different pool does ALL the processing) - meaningfully
+different architecture, not just a naming variant
+
+"load balancing" = how completed messages get distributed across the worker pool
+(round-robin, least-busy-worker, hash-by-connection-for-ordering-guarantees, etc)

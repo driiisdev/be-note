@@ -1,0 +1,30 @@
+process vs thread
+
+process
+- an instance of a running program
+- owns its own isolated virtual memory address space + resources (file descriptors etc)
+- the os's main unit of resource ownership/isolation
+
+thread
+- a unit of execution WITHIN a process
+- threads in the same process SHARE that process's memory (heap, globals)
+- each thread has its own stack + cpu register state (program counter etc)
+
+competing for cpu time
+- a cpu core executes ONE thread at a time (ignoring hyperthreading)
+- os scheduler time-slices the cpu across ALL runnable threads/processes on the machine -
+  not just within your program, against everything else running too
+- N cores = up to N threads truly simultaneous (parallelism), beyond that = time-sliced
+  (concurrency, interleaved, not actually simultaneous)
+
+context switch
+- os pausing one thread, resuming another on the same core
+- has real cost: saving/restoring registers, cache/TLB gets cold again
+- too many threads competing for too few cores -> excessive context switching ("thrashing")
+- switching between THREADS (same process) is cheaper than switching between PROCESSES
+  (no need to swap the whole virtual memory mapping)
+
+why this matters for backend design
+- how many threads should a server run? too few = idle cores, too many = context-switch
+  overhead eats the gains
+- this exact tension is what motivates every execution pattern later in this module

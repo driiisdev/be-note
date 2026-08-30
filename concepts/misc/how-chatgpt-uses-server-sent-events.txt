@@ -1,0 +1,27 @@
+how chatgpt (and similar llm chat uis) use server-sent events
+
+the problem: an llm generates a response TOKEN BY TOKEN (or in small chunks), and full
+generation can take many seconds - waiting for the ENTIRE response before sending anything
+back would mean staring at a blank screen the whole time
+
+the fix: stream each token/chunk to the client as soon as it's generated, instead of buffering
+the whole response server-side first - see comms design pattern/server sent events.md, this is
+that exact pattern applied to llm output specifically
+
+why sse (or sse-flavored streaming) fits well
+- one-directional (server -> client) is all that's needed once the request is sent - the
+  client doesn't need to send anything back mid-stream
+- built on plain http (chunked transfer encoding, text/event-stream) - no special protocol
+  upgrade needed, works through normal http infra more easily than websockets would (see
+  proxy n load balancing/websocket-proxying.md for how much more proxies have to do for ws)
+- dramatically improves PERCEIVED latency (time to first token) even though total generation
+  time is unchanged - the user sees output start appearing almost immediately
+
+nuance: not always the literal EventSource api
+- browser's native EventSource only supports GET requests, but chat completion calls are
+  POST (need to send the prompt/conversation in a body)
+- so a lot of llm streaming clients hand-roll the SSE wire format over fetch() + a
+  ReadableStream reader instead of using `new EventSource()` directly - same
+  "data: ...\n\n" framing, just consumed manually since EventSource can't be used for POST
+
+related: comms design pattern/server sent events.md, comms design pattern/request-response.md

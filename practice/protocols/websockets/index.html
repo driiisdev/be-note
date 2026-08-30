@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>WebSocket demo</title>
+    <style>
+      body { font-family: sans-serif; max-width: 500px; margin: 40px auto; }
+      #log { border: 1px solid #ccc; padding: 8px; height: 200px; overflow-y: auto; }
+      #log p { margin: 2px 0; }
+    </style>
+  </head>
+  <body>
+    <h3>WebSocket demo (open this page in two tabs to see broadcast)</h3>
+    <div id="log"></div>
+    <input id="input" placeholder="type a message, press enter" style="width: 100%" />
+
+    <script>
+      // the browser's built-in WebSocket does the handshake (Upgrade request,
+      // Sec-WebSocket-Key, parsing 101 Switching Protocols) entirely on its own -
+      // this is the realistic client, matched against the hand-rolled server in server.js
+      const ws = new WebSocket("ws://localhost:3300");
+      const log = document.getElementById("log");
+      const input = document.getElementById("input");
+
+      function line(text) {
+        const p = document.createElement("p");
+        p.textContent = text;
+        log.appendChild(p);
+        log.scrollTop = log.scrollHeight;
+      }
+
+      ws.onopen = () => line("(connected)");
+      ws.onmessage = (event) => line("< " + event.data);
+      ws.onclose = () => line("(disconnected)");
+
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && input.value) {
+          ws.send(input.value);
+          line("> " + input.value);
+          input.value = "";
+        }
+      });
+    </script>
+  </body>
+</html>

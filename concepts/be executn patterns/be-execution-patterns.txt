@@ -1,0 +1,27 @@
+be execution patterns - overview of this module
+
+question this module answers: "when a server needs to handle many concurrent client
+connections, how does it organize its threads to do that?"
+
+building blocks (covered first):
+- process vs thread, how they compete for cpu time
+- how a backend accepts connections (listen + backlog + accept())
+- the 3 roles: the Listener, the Acceptor, the Reader
+- reading + sending socket data (the actual io work)
+
+the pattern progression (A -> E), each fixing the previous one's bottleneck:
+A. single listener/acceptor/reader thread - simplest, does everything sequentially, one thread
+B. single listener/acceptor thread + multiple reader threads - accepting no longer blocked
+   behind slow reads/processing
+C. single listener/acceptor/reader thread + worker pool for message processing - splits by
+   STAGE (io vs processing) instead of by connection
+D. multiple acceptor threads on ONE shared socket - scales the accept() step itself under
+   high connection churn
+E. multiple listeners/acceptors/readers via socket sharding (SO_REUSEPORT) - fully
+   independent units, no shared bottleneck at all, how modern servers scale across cores
+
+picking the wrong pattern for the workload (io-bound vs cpu-bound, connection churn rate,
+message size) leaves cores idle or creates contention - this determines a server's real
+max throughput
+
+related: backend-idempotency.txt covers "when to use threads?" as a direct follow-up question

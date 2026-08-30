@@ -1,0 +1,18 @@
+
+request response model
+- client sends a request
+- server parse the request
+- server processes the request
+- server sends a response
+- client parses the response and consume
+
+where it is used?
+- web, http, dns, ssh
+- rpc (remote procedure call)
+- sql and database protocols
+- apis(rest/soap/graphql)
+
+anatomy of a request/response
+- a request structure is defined by both client and server
+- request has a boundary
+- defined by a protocol and message format

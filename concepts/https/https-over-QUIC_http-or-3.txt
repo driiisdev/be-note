@@ -1,0 +1,20 @@
+https over QUIC (= http/3), fresh connection, no 0-RTT
+
+quic runs over udp and merges the "connection setup" handshake and the "crypto" handshake
+into ONE exchange - no separate tcp SYN/SYN-ACK step before the tls stuff even starts
+
+flights:
+t=0    client -> Initial packet: QUIC transport params + TLS 1.3 ClientHello, together
+t=0.5  server -> Initial+Handshake packets: ServerHello, cert, Finished, AND quic's own
+               connection confirmation - all in this one flight (no separate "SYN-ACK" step)
+t=1.0  client -> Finished + the actual HTTP/3 request
+t=1.5  server -> HTTP response
+t=2.0  client receives first response byte
+
+= 2 RTT total for a FRESH connection - already beats tcp+tls1.3's 3 RTT, purely because quic
+never pays for a separate transport-only handshake before starting the crypto handshake
+
+this is the same reason https-tls-keys-certificates.md and http-3.md describe quic as
+"tls 1.3 baked directly in, not layered on top" - here's the concrete RTT payoff of that design
+
+next: what happens when you ALSO have a psk from an earlier quic session with this server

@@ -1,0 +1,33 @@
+how does the kernel manage backend connections
+
+the app-level accept()/listen() story (be executn patterns/how-the-be-accepts-connections.md)
+is the surface - this is what's actually happening underneath, in the kernel
+
+TWO queues, not one, for a listening socket (linux)
+- SYN queue (aka syn backlog) - holds HALF-open connections, mid tcp-handshake (syn received,
+  waiting for the final ack) - net.ipv4.tcp_max_syn_backlog controls its size
+- accept queue - holds FULLY established connections (handshake complete) waiting for the app
+  to call accept() - net.core.somaxconn controls its size (this is the "backlog" number you
+  pass to listen())
+- if the accept queue fills up (app not calling accept() fast enough) the kernel can drop new
+  completed connections or refuse them, depending on config
+
+the kernel owns the WHOLE tcp state machine per connection, regardless of the app
+- SYN_SENT, SYN_RECEIVED, ESTABLISHED, FIN_WAIT, TIME_WAIT, CLOSED etc - all tracked by the
+  kernel, not the application
+- the app just sees "connected" or "data available" - it has no idea what state the kernel's
+  tcp stack is actually in unless it asks (netstat/ss)
+
+the kernel buffers data independent of the app's read/write calls
+- socket receive buffer: data can arrive and sit in the kernel buffer before the app ever
+  calls read() - this is WHY a socket "readable" event can fire with data the app hasn't
+  touched yet
+- socket send buffer: write() can return successfully before the data has actually left the
+  machine - it just means the kernel accepted it into its buffer
+
+file descriptor limits
+- every open socket is a file descriptor - `ulimit -n` caps how many an app/process can have
+  open at once - a backend under heavy connection load can hit this ceiling and start failing
+  to accept new connections or open new outbound ones, independent of any tcp-level limit
+
+related: be executn patterns/how-the-be-accepts-connections.md, running-out-of-tcp-ports.txt

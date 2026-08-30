@@ -1,0 +1,22 @@
+
+UDP - user datagram protocol, transport layer
+connectionless, unreliable, unordered, no flow/congestion control
+
+no handshake - just send "datagrams", fire and forget
+tiny header (8 bytes) vs tcp's 20+ bytes -> less overhead
+
+no guarantee of:
+- delivery (packet can just be dropped, nobody retries)
+- order (packets can arrive in a different order than sent)
+- no duplicate detection
+
+if the app needs any of that, IT has to implement it itself on top of udp
+
+why use it: speed / low latency matters more than perfect reliability, or the app already
+handles reliability itself in a way that fits its use case better than tcp's generic approach
+
+used by: dns queries, video/audio streaming, voip, online games, quic (http/3 is built on udp,
+quic adds its own reliability layer in userspace instead of relying on the kernel's tcp stack)
+
+pros: low latency, low overhead, no head-of-line blocking, supports broadcast/multicast
+cons: app has to handle reliability/ordering itself if it cares

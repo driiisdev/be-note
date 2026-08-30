@@ -1,0 +1,24 @@
+https over tcp fast open (tfo) + tls 1.3 + 0-RTT
+
+prerequisite: BOTH a tfo cookie (from an earlier connection to this server - server hands
+this out in its first SYN-ACK) AND a tls psk (from an earlier full tls session)
+
+tfo lets the very first packet - the SYN itself - carry data, if the client presents a valid
+cookie proving it's not spoofing its source ip (normal SYNs can't carry app data because a
+spoofed SYN could be used to blast data at a victim without completing a real handshake)
+
+flights:
+t=0    client -> SYN + tfo cookie + ClientHello(psk+early_data) + encrypted http request,
+               ALL packed into the one initial packet
+t=0.5  server -> validates cookie, accepts connection, decrypts+processes the early data,
+               sends back SYN-ACK + ServerHello+Finished + the actual HTTP RESPONSE, together
+t=1.0  client receives everything - connection confirmed, handshake done, response in hand
+
+= 1 RTT total. the fastest possible over classic tcp - even the tcp handshake's own round
+trip carries real application data instead of being "wasted" on connection setup alone
+
+why this isn't used everywhere: tfo needs OS/kernel support on both ends, and a lot of
+middleboxes/firewalls on the open internet don't understand data-carrying SYN packets and
+silently drop them - many OSes ship tfo disabled by default or fall back gracefully when it
+fails, which makes it unreliable enough that most of the industry moved to quic instead of
+leaning on tfo

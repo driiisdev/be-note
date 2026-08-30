@@ -1,0 +1,22 @@
+
+WebSockets
+- full-duplex, persistent, bidirectional connection over a single tcp connection
+- either side can send a message at any time, no request-response requirement
+
+handshake
+- starts as a normal http request with `Upgrade: websocket` + `Connection: Upgrade` headers
+- server responds `101 Switching Protocols`
+- after that the connection stops speaking http and switches to ws framing
+
+frames, not http messages, after the handshake
+- ping/pong control frames for keepalive / detecting dead connections
+
+use cases: chat, live collaboration (docs-style), multiplayer games, live dashboards/trading
+
+vs SSE (comms design pattern notes) - SSE is server -> client only, plain http, auto
+reconnect built in. websockets is bidirectional but needs the upgrade + more to manage.
+
+cons: stateful - server holds one open connection per client (ties to stateful vs stateless
+notes). doesn't play as nicely with plain http load balancers/caches. scaling across multiple
+server instances needs sticky sessions or a shared pub/sub backplane so a message from one
+instance can reach a client connected to a different instance.

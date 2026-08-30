@@ -1,0 +1,28 @@
+how SELECT COUNT(*) can impact backend app performance
+
+why it's expensive on a big table
+- postgres uses mvcc (multi-version concurrency control) - multiple versions of a row can
+  exist at once (for different in-flight transactions' snapshots)
+- there's no single "row count" stored anywhere the db can just read - to answer COUNT(*)
+  accurately, it has to walk every row and check which ones are VISIBLE to the current
+  transaction's snapshot
+- this means COUNT(*) is generally an O(n) sequential/index scan, not an O(1) lookup, even
+  with an index - mysql innodb has the same mvcc-driven problem (myisam used to cache exact
+  counts, innodb doesn't)
+
+the classic footgun: pagination
+- "page 1 of 5,213" style uis often run a fresh COUNT(*) query on EVERY page load just to
+  compute the total page count
+- fine on a small table, becomes a major bottleneck as the table grows - the count query can
+  end up costing more than the actual page of data being fetched
+
+mitigations
+- approximate counts - postgres pg_class.reltuples (updated by autovacuum/analyze, not exact
+  but close and instant), or EXPLAIN's row estimate
+- keyset/cursor pagination instead of offset+total-count ("load more" / next-cursor instead of
+  page numbers) - avoids needing a total count at all
+- maintain a running counter in a separate row/table, incremented on insert and decremented on
+  delete, instead of counting live
+- cache the count with a short ttl if exactness isn't critical
+
+related: protocols (general db-adjacent perf topic, not covered elsewhere in this repo yet)

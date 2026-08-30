@@ -1,0 +1,33 @@
+postgres failure caused by a tcp issue at the router level (general pattern, not exact story
+details - fill in the specific lecture's exact incident details here if i want them recorded)
+
+the general class of problem: a connection pool (app-side, or pgbouncer) holds open, persistent
+tcp connections to postgres to avoid the cost of reconnecting per query. those connections can
+sit IDLE for a while between queries.
+
+an intermediate network device (router/firewall/nat gateway) between the app and the db often
+maintains its OWN connection tracking table (conntrack) with a much shorter idle timeout than
+either endpoint expects. if a connection sits idle past that device's timeout, the device can
+silently drop its tracking entry for it - WITHOUT telling either endpoint (no RST, no FIN sent
+to either side)
+
+result: both the app's connection pool and postgres still THINK the connection is alive - it's
+sitting in ESTABLISHED state on both ends locally. the next time the app tries to actually use
+that connection to send a query, the packet vanishes into a network path that no longer
+recognizes it - the app hangs or times out waiting for a response that will never come, often
+looking like "postgres is unresponsive" when postgres itself is completely healthy
+
+why this is hard to debug: nothing LOGS an error at the moment of failure (no RST was sent),
+the symptom only shows up later as a mysterious hang/timeout, and it can look identical to a
+real database performance problem
+
+the fix: tcp keepalive
+- both app-side pool and/or postgres can be configured to periodically send small keepalive
+  probes on idle connections (tcp_keepalives_idle / tcp_keepalives_interval /
+  tcp_keepalives_count in postgres, socket.setKeepAlive() at the app level)
+- this does two things: (1) it periodically "touches" the connection so an intermediate
+  device's conntrack table doesn't treat it as idle/expired, and (2) if the connection genuinely
+  IS dead, the keepalive probe fails fast and the app finds out immediately instead of only
+  discovering it during a real query
+
+related: protocols/tcp.md, how-does-the-kernel-manage-backend-connections.txt

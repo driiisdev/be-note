@@ -1,0 +1,24 @@
+https over tcp with tls 1.3 (fresh, no resumption)
+
+flights:
+t=0    client -> SYN
+t=0.5  server -> SYN-ACK
+t=1.0  client -> ACK + ClientHello (includes a guessed key_share)
+t=1.5  server -> ServerHello, key_share, EncryptedExtensions, Certificate, CertificateVerify,
+                 Finished -- ALL in one flight (tls1.3 collapsed this vs tls1.2's 2 flights)
+t=2.0  client -> Finished + the actual HTTP request, sent together
+t=2.5  server -> HTTP response
+t=3.0  client receives first response byte
+
+= 3 RTT total (1 fewer than tls1.2's 4)
+
+why it's faster: tls1.3 redesigned the handshake so the server sends EVERYTHING it needs to
+in one flight (cert + finished together), and the client can derive keys + send its own
+Finished + real app data in the very next flight, no extra confirmation round trip needed
+
+client's "guessed key_share" trick: client optimistically sends a key share for the group it
+thinks the server prefers (most servers support the same 1-2 popular groups, e.g. x25519) -
+if the guess is right (usually is), no extra round trip needed to negotiate which group to use
+
+still 1 RTT of pure handshake sitting in front of the request - this is what 0-RTT attacks
+next

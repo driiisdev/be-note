@@ -1,0 +1,21 @@
+
+HTTP/1.1
+- text based, request-response, runs over tcp
+
+persistent connections (keep-alive) by default
+- improvement over http/1.0 which opened a new tcp connection per request
+- reuses one tcp connection for multiple requests -> saves repeating the handshake
+
+head-of-line blocking (at the http layer)
+- requests on the SAME connection are handled one at a time, in order
+- pipelining (send multiple requests without waiting) exists in spec but barely supported/used
+  because of bugs
+- workaround: browsers open multiple parallel tcp connections per host (usually ~6) to get
+  concurrency, but that means multiple handshakes, more resource usage
+
+headers are plain text, sent in full on every request - no compression -> repeated overhead
+
+methods: GET, POST, PUT, PATCH, DELETE, etc
+status codes: 2xx success, 3xx redirect, 4xx client error, 5xx server error
+
+chunked transfer encoding - stream a response without knowing Content-Length upfront

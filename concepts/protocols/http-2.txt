@@ -1,0 +1,21 @@
+
+HTTP/2
+- binary framing instead of plain text (still http semantically - same methods/headers/status)
+- still runs over tcp
+
+multiplexing - multiple "streams" over ONE tcp connection
+- fixes http/1.1's per-connection head-of-line blocking, no more needing 6 parallel connections
+- request/response for stream A doesn't have to wait for stream B on the same connection
+
+HPACK - header compression, avoids resending the same headers in full every time
+
+stream prioritization - client can hint which responses matter more
+
+server push - server can proactively send resources it knows the client will need
+(mostly deprecated/removed in browsers later on, but conceptually part of the spec)
+
+still has a problem: TCP-level head-of-line blocking
+- everything above is still riding on ONE tcp connection
+- if a single tcp segment is lost, TCP blocks ALL multiplexed http/2 streams until it's
+  retransmitted, even the ones that had nothing to do with the lost segment
+- this is exactly the problem http/3 solves by ditching tcp

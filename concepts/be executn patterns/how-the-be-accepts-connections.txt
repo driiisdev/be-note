@@ -1,0 +1,24 @@
+how a backend accepts connections
+
+steps: create socket -> bind to address:port -> listen()
+
+listen() creates a BACKLOG QUEUE
+- the os parks incoming connections here once they've completed the tcp 3-way handshake,
+  but BEFORE the application has called accept() on them
+- backlog has a max size (configurable - listen(fd, backlog) in posix, server.listen(port,
+  backlog) in node)
+- if it fills up (app not calling accept() fast enough, or too many conns at once) further
+  SYNs can be dropped/refused - client sees timeouts/connection refused, server may never
+  "see" those failed attempts explicitly
+
+accept() is a syscall
+- pulls the NEXT completed connection off the backlog queue
+- returns a NEW socket fd representing that specific client connection
+- the original LISTENING socket stays open, only ever used to accept future new connections -
+  it never exchanges application data itself
+
+blocking vs non-blocking accept()
+- blocking: thread waits until a connection is available
+- non-blocking: returns immediately with an error if nothing's waiting, needs a poll/select/
+  epoll loop to know when to try again
+- this choice is central to which execution pattern (later in this module) you can even build

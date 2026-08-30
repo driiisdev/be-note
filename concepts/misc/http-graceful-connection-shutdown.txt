@@ -1,0 +1,31 @@
+http graceful connection shutdown
+
+the problem: a backend process needs to restart (deploy, scale down, crash recovery) - if it
+just exits immediately, any IN-FLIGHT request gets its connection reset/dropped mid-response -
+client sees a hard error even though the request was almost done
+
+graceful shutdown sequence
+1. receive a shutdown signal (SIGTERM - "please stop", as opposed to SIGKILL which gives the
+   process NO chance to clean up at all, that's the whole point of the distinction)
+2. stop ACCEPTING new connections immediately (close the listening socket / stop calling
+   accept()) - see be executn patterns/how-the-be-accepts-connections.md
+3. let already-in-flight requests finish naturally on their existing connections
+4. close idle keep-alive connections that have no in-flight request on them
+5. after a grace period timeout, forcibly close anything still open (a stuck/hanging request
+   shouldn't block shutdown forever)
+6. exit
+
+node.js specifics
+- server.close() stops the server from accepting NEW connections but does NOT touch existing
+  ones - it only actually fires its callback once every existing connection has closed
+- need to track open sockets/connections manually if you want a hard timeout fallback (force
+  destroy anything left after N seconds)
+
+the load balancer side of this matters too
+- ideally the lb/reverse proxy stops routing NEW traffic to an instance BEFORE it even gets the
+  shutdown signal (health check failing / connection draining) - see proxy n load balancing/
+  proxy-vs-reverse-proxy.md - otherwise there's a race where the lb sends a new request to an
+  instance that's already stopped accepting
+
+process managers (kubernetes, pm2, systemd) send SIGTERM then wait a configurable grace period
+before sending SIGKILL if the process hasn't exited yet

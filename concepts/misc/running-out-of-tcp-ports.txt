@@ -1,0 +1,33 @@
+running out of tcp ports
+
+a tcp connection is uniquely identified by a 4-tuple: (source ip, source port, dest ip, dest
+port) - NOT just the destination. this matters for a client (or a backend acting as a client
+to some other service) making lots of outbound connections
+
+ephemeral port range
+- when a client opens an outbound connection without binding a specific port, the os picks one
+  from the "ephemeral port range" (linux default roughly 32768-60999, ~28k ports)
+- ALL outbound connections FROM one client ip TO the same dest ip:port draw from this same
+  pool of ephemeral source ports
+
+TIME_WAIT makes it worse
+- after a connection closes, the side that initiated the close holds that port in TIME_WAIT
+  for 2*MSL (historically ~60s, tunable) - the port isn't reusable for a new connection to the
+  same dest during that window
+- an app opening a NEW short-lived connection per request (no keep-alive, no pooling) to the
+  same downstream service can burn through the entire ephemeral port range faster than
+  TIME_WAIT frees them up
+
+what it looks like when it happens
+- new outbound connections start failing - "cannot assign requested address" / EADDRNOTAVAIL -
+  even though the destination service is completely healthy, because the CLIENT has no
+  available source ports left for that specific dest ip:port pair
+
+mitigations
+- connection pooling / keep-alive reuse - the #1 fix, avoids opening a new connection (and
+  burning a port) per request at all
+- tcp_tw_reuse - allow a TIME_WAIT socket to be reused sooner for new outgoing connections
+- widen the ephemeral port range
+- spread outbound traffic across multiple source ips if truly necessary at extreme scale
+
+related: protocols/tcp.md, how-does-the-kernel-manage-backend-connections.txt

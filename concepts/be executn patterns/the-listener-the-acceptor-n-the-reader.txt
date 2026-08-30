@@ -1,0 +1,21 @@
+the listener, the acceptor, and the reader - 3 roles
+
+Listener
+- owns the listening socket (bound + listening on a port)
+- mostly passive - exists so the os has somewhere to park completed handshakes (the backlog)
+
+Acceptor
+- the thread/code that calls accept() to pull a new connection off the listener's backlog
+- hands the resulting per-connection socket off somewhere - to itself (to read), or to
+  another thread/pool
+
+Reader
+- the thread/code that reads (recv/read) application data off an ALREADY-accepted
+  connection's socket, and processes/responds to it
+
+these 3 roles can all live on the SAME thread (simplest - pattern A) or be split across
+DIFFERENT threads (more scalable, more complex - needs safe hand-off of sockets/data between
+threads)
+
+the rest of this module = every reasonable way to combine/split these 3 roles across threads,
+and the tradeoff each choice makes

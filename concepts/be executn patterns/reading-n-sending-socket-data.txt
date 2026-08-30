@@ -1,0 +1,25 @@
+reading and sending socket data
+
+once a connection is accepted, the Reader role does the actual application work:
+- read()/recv() - pulls bytes off the socket's receive buffer
+- write()/send() - pushes bytes into the socket's send buffer for the os to transmit
+
+NOT message-boundary-aware
+- tcp is a byte stream (see protocols/tcp.md) - reader has to implement its OWN framing
+  (length-prefix, delimiter, etc) to know where one message ends and the next begins -
+  exact same idea as the multiplexing-vs-demultiplexing + networking-fundamentals practice
+  projects already in this repo
+
+blocking vs non-blocking reads
+- blocking read() doesn't return until data is available (or conn closes/errors) - same
+  choice as blocking vs non-blocking accept(), ties into thread-per-connection vs event-loop
+
+nagle's algorithm (send side)
+- by default tcp batches up small outgoing writes into fewer, larger packets to cut per-packet
+  overhead - can add latency for small, latency-sensitive messages
+- TCP_NODELAY disables it - see backend-idempotency.txt, covered there in more depth
+
+backpressure
+- if the reader can't keep up with incoming data, or the writer can't keep up with how fast
+  the os will accept writes, buffers fill up - this is flow control (protocols/tcp.md)
+  becoming an application-visible concern

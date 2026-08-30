@@ -1,0 +1,25 @@
+pattern E: multiple listeners/acceptors/readers with socket sharding (SO_REUSEPORT)
+
+instead of ONE listening socket shared by multiple acceptor threads (pattern D), each worker
+(thread OR, more commonly, separate PROCESS) creates its OWN independent listening socket,
+all bound to the SAME port using SO_REUSEPORT (linux) - the KERNEL itself load-balances
+incoming connections across these separate sockets/backlog queues (typically hashes the
+client's ip:port, so a given client consistently lands on the same shard)
+
+= "socket sharding" - each worker gets its OWN backlog queue (not shared/contended),
+eliminating pattern D's shared-queue contention/thundering-herd concerns entirely - near
+linear scaling of accept() throughput across cpu cores since there's no shared kernel
+structure being contended for
+
+how modern high-perf servers actually scale across cores: nginx with multiple worker
+processes + SO_REUSEPORT; node's cluster module can use this exact mechanism on supporting
+platforms
+
+each independent listener+acceptor combo usually has its OWN reader(s) too - so this pattern
+typically means N FULLY independent listener+acceptor+reader units (often one per cpu core),
+each handling its slice of traffic with zero cross-unit coordination needed for accept/read
+
+tradeoff: workers are usually separate PROCESSES (full isolation/fault tolerance) - they
+don't share application state (in-memory caches, connection counts) by default, need external
+coordination (shared db/cache, or ipc) if they need to share anything - the earlier "shared
+single listener" patterns didn't have this problem

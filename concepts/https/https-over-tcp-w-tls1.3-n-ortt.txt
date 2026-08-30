@@ -1,0 +1,28 @@
+https over tcp with tls 1.3 + 0-RTT (resumed, early data)
+
+prerequisite: client already has a PSK from an earlier full handshake with this exact server
+(delivered via a NewSessionTicket message at the end of that earlier session)
+
+flights:
+t=0    client -> SYN
+t=0.5  server -> SYN-ACK
+t=1.0  client -> ACK + ClientHello(w/ psk + early_data ext) + ENCRYPTED EARLY DATA
+               (the actual http request, encrypted under a key derived from the PSK)
+t=1.5  server -> decrypts early data immediately, processes the request, sends back
+               ServerHello+EncryptedExtensions+Finished AND the actual HTTP RESPONSE, together
+t=2.0  client receives the response (and finishes the handshake w/ its own Finished after)
+
+= 2 RTT total (1 fewer than fresh tls1.3's 3) - the request rode along with the FIRST flight
+instead of waiting for the handshake to finish first
+
+important: plain resumption (psk, no early_data) does NOT get this speedup - still 1 RTT of
+handshake before app data, same as fresh tls1.3, just cheaper CPU (no cert verify). the RTT
+saving specifically requires early_data / 0-RTT.
+
+big caveat: 0-RTT data has NO forward secrecy protection against replay - an attacker who
+captures that first flight can literally resend it and the server will process it again as if
+it were a new legit request. only safe for idempotent stuff (GET, not POST/payments) unless
+the app has its own anti-replay defense. servers can also just refuse to accept early data.
+
+verified locally with openssl s_client -early_data / s_server -early_data - server logs
+"Early data was accepted" when it works

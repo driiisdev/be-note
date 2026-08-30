@@ -1,0 +1,27 @@
+
+IP - internet protocol, network layer (osi layer 3)
+job: addressing + routing packets across networks
+
+connectionless, best-effort, unreliable
+- no handshake, no guarantee of delivery/order/no duplicates
+- reliability is NOT ip's job -> that's what tcp adds on top
+
+ipv4
+- 32 bit, dotted decimal (192.168.1.1)
+- ~4.3 billion addresses -> exhausted, worked around with NAT
+
+ipv6
+- 128 bit, hex, colon separated
+- huge address space, no NAT really needed, built to fix ipv4 exhaustion
+
+packet = header (version, ttl, protocol, source ip, dest ip) + payload
+ttl = hop limit, prevents infinite routing loops
+
+routing: packet hops router to router, each router picks next hop based on dest ip + its
+routing table, until it reaches the destination network
+
+public vs private ip ranges (10.x, 172.16-31.x, 192.168.x = private/reserved)
+NAT = translates private ip <-> public ip so multiple devices share one public ip
+
+DNS is a different protocol/system but closely related: resolves a hostname -> an ip address
+so tcp/udp actually has something to connect to

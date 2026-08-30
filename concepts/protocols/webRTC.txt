@@ -1,0 +1,27 @@
+
+WebRTC
+- peer-to-peer real time communication directly between browsers/clients (audio, video, data)
+- media doesn't route through a server once connected - straight peer to peer
+
+signaling
+- webrtc does NOT define how peers find each other / exchange setup info
+- need a separate signaling channel (commonly websockets or http) to exchange:
+  - SDP offer/answer (session description - codecs, media types etc)
+  - ICE candidates (possible ways to reach this peer)
+
+NAT traversal - most clients are behind a nat/firewall
+- ICE = the framework that tries different ways to connect
+- STUN server: tells a client its own public ip:port (helps most direct p2p connections work)
+- TURN server: relay of last resort if direct p2p fails, all traffic goes through it (costly)
+
+encryption is mandatory - DTLS-SRTP, media is always encrypted, no plaintext option
+
+pieces
+- MediaStream: mic/camera capture
+- RTCPeerConnection: the actual p2p connection, codec negotiation
+- RTCDataChannel: arbitrary data (not just media), built on SCTP, can be configured
+  reliable/ordered (tcp-like) or unreliable/unordered (udp-like)
+
+backend's job here isn't the media path (that's p2p) - it's building/running the signaling
+server, and running STUN/TURN infra (coturn is a common open source TURN server). for group
+calls an SFU (selective forwarding unit) is used instead of full mesh p2p between everyone.
