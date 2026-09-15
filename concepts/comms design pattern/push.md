@@ -38,9 +38,8 @@ infrastructure that supports long-lived connections (some proxies/load balancers
 short-lived HTTP requests and need tuning); reconnect/backoff logic has to be handled
 explicitly if the connection drops.
 
-🖼️ **Image needed:** a diagram of one persistent connection with arrows going both directions
-at arbitrary times (not paired request→response arrows) — to visually contrast with the
-request-response diagram. Search: "websocket persistent connection diagram".
+🖼️ **websocket persistent connection diagram**
+![websocket persistent connection diagram](../../assets/img/ws.png)
 
 ## Practice project
 

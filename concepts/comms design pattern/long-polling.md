@@ -11,7 +11,7 @@ timeout is hit). This trades a bit of server complexity for far fewer wasted rou
 3. As soon as new data is available (or a timeout expires, e.g. 30s), the server responds.
 4. Client immediately re-issues a new request the moment it gets a response.
 
-From the outside it still looks like plain request-response — same protocol, same headers —
+From the outside it still looks like plain request-response - same protocol, same headers -
 but the *timing* is different: responses arrive exactly when something happened, not on a
 fixed clock tick.
 
@@ -27,23 +27,22 @@ fixed clock tick.
 **Pros:** far fewer wasted requests than plain polling, lower latency for updates (server
 responds the instant something changes, not on the next tick), works over plain HTTP.
 
-**Cons:** ties up a server connection/thread per waiting client — doesn't scale as well as
+**Cons:** ties up a server connection/thread per waiting client - doesn't scale as well as
 a true push mechanism; still has to re-establish a new HTTP request after every response
 (a small amount of overhead per update); a timeout with no data is itself a wasted round trip.
 
-🖼️ **Image needed:** side-by-side timeline comparing polling (many short request/instant-reply
-pairs, mostly "no change") vs long polling (few long-held requests, each ending exactly when
-data appears). Search: "long polling sequence diagram".
+🖼️ **long polling sequence diagram**
+![polling](../../assets/img/polling.png)
 
 ## Practice project
 
-[`practice/comms-design-pattern/notification-delivery`](../../practice/comms-design-pattern/notification-delivery) —
+[`practice/comms-design-pattern/notification-delivery`](../../practice/comms-design-pattern/notification-delivery) -
 the server holds the HTTP response open until an in-memory "event" fires or a timeout
 elapses; the client re-requests immediately after each response so you can watch it
 re-connect the instant it gets an answer.
 
 ## Related
 
-- [Polling](<polling.md>) — the naive version this improves on.
-- [Server-sent events](<server-sent-events.md>) — a standardized, more efficient way to get
+- [Polling](<polling.md>) - the naive version this improves on.
+- [Server-sent events](<server-sent-events.md>) - a standardized, more efficient way to get
   server-initiated updates without repeatedly re-opening connections.

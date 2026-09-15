@@ -9,7 +9,7 @@ framework normally hides are visible: **parse → process → respond → parse*
 
 ## Scenario
 
-A tiny "time service" — the client asks the server what time it is, once, and gets one
+A tiny "time service" - the client asks the server what time it is, once, and gets one
 answer back. No frameworks, no dependencies: just Node's built-in `http` module.
 
 ## Folder structure
@@ -22,7 +22,7 @@ request-response/
 
 ## Code walkthrough
 
-**`server.js`** — the four stages from the concept note, made explicit:
+**`server.js`** - the four stages from the concept note, made explicit:
 
 ```js
 const server = http.createServer((req, res) => {
@@ -38,7 +38,7 @@ const server = http.createServer((req, res) => {
 });
 ```
 
-**`client.js`** — sends the request, then parses + consumes the response:
+**`client.js`** - sends the request, then parses + consumes the response:
 
 ```js
 http.get("http://localhost:3000/time", (res) => {
@@ -71,9 +71,9 @@ server to log each of its four stages in order.
 ## Try this yourself
 
 - Hit a path that doesn't exist (change the client's URL to `/nope`) and see the 404 branch.
-- Add a second route, e.g. `/echo`, that reflects a query parameter back — reinforces the
+- Add a second route, e.g. `/echo`, that reflects a query parameter back - reinforces the
   "parse the request" step actually doing something with the request instead of ignoring it.
-- Run the client twice in a row and note the server has zero memory of the first request —
+- Run the client twice in a row and note the server has zero memory of the first request -
   ties directly into [stateful vs stateless](<../../../concepts/comms design pattern/stateful-vs-stateless.md>).
 
 ## Real-world equivalent
