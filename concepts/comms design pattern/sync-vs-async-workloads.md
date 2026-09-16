@@ -1,6 +1,6 @@
 # Sync vs Async Workloads
 
-Once a request reaches a server, how does the server actually process it — does handling one
+Once a request reaches a server, how does the server actually process it - does handling one
 request block everything else, or can the server work on many at once?
 
 ## How it works
@@ -21,7 +21,7 @@ Async:  [-- request A: wait on DB (non-blocking) --]
         [-- request A resumes when DB responds, finishes --]
 ```
 
-Note this is about a *single server's* concurrency model — it's a different axis from
+Note this is about a *single server's* concurrency model - it's a different axis from
 [stateful vs stateless](<stateful-vs-stateless.md>) (which is about what the server
 remembers) and from the client-facing patterns like [polling](<polling.md>)/[push](<push.md>)
 (which are about how the *client* finds out about updates).
@@ -29,10 +29,10 @@ remembers) and from the client-facing patterns like [polling](<polling.md>)/[pus
 ## Where it's used
 
 - **Sync-style:** traditional thread-per-request servers (classic PHP/Apache, older Java
-  servlet containers) — simple to reason about, one thread = one request, but one slow
+  servlet containers) - simple to reason about, one thread = one request, but one slow
   request ties up one whole thread/worker.
 - **Async-style:** Node.js's event loop, Python's `asyncio`, Go's goroutines, Nginx's
-  worker model — a single thread/worker can juggle thousands of in-flight requests because
+  worker model - a single thread/worker can juggle thousands of in-flight requests because
   it never blocks waiting on I/O.
 
 ## Pros / Cons
@@ -40,7 +40,7 @@ remembers) and from the client-facing patterns like [polling](<polling.md>)/[pus
 **Sync pros:** simpler mental model (code reads top-to-bottom, no callbacks/promises to
 reason about); easier to debug with a normal stack trace.
 
-**Sync cons:** doesn't scale well for I/O-heavy workloads — every blocked request wastes a
+**Sync cons:** doesn't scale well for I/O-heavy workloads - every blocked request wastes a
 whole thread/worker; needs more threads/processes (= more memory) to handle the same load an
 async server handles with far fewer.
 
@@ -49,23 +49,23 @@ efficiently (great for APIs that mostly wait on databases/network calls, not CPU
 
 **Async cons:** harder to reason about (execution order isn't top-to-bottom anymore); a
 single CPU-heavy synchronous chunk of code can still block the whole event loop for
-everyone else — async only helps with I/O waits, not CPU work.
+everyone else - async only helps with I/O waits, not CPU work.
 
-🖼️ **Image needed:** a timeline comparing one thread handling 3 requests sequentially (sync)
-against one event loop interleaving 3 requests' I/O waits (async) — makes the "waiting is
-wasted vs waiting is reused" idea visual. Search: "synchronous vs asynchronous request
-handling diagram".
+🖼️ **synchronous vs asynchronous request handling diagram**
+![synchronous vs asynchronous request handling diagram 1](<../../assets/img/sync vs async 1.png>)
+
+![synchronous vs asynchronous request handling diagram 2](<../../assets/img/sync vs async 2.png>)
 
 ## Practice project
 
-[`practice/comms-design-pattern/sync-vs-async`](../../practice/comms-design-pattern/sync-vs-async) —
+[`practice/comms-design-pattern/sync-vs-async`](../../practice/comms-design-pattern/sync-vs-async) -
 two endpoints on the same server: `/sync-task` deliberately blocks the whole process with a
-CPU-bound loop, `/async-task` does an equivalent-length wait via a non-blocking timer — fire
+CPU-bound loop, `/async-task` does an equivalent-length wait via a non-blocking timer - fire
 several concurrent requests at each and watch one endpoint serialize while the other doesn't.
 
 ## Related
 
-- [Multiplexing vs demultiplexing](<multiplexing-vs-demultiplexing.md>) — the mechanism that
+- [Multiplexing vs demultiplexing](<multiplexing-vs-demultiplexing.md>) - the mechanism that
   lets many requests share one connection/thread in the first place.
-- [Stateful vs stateless](<stateful-vs-stateless.md>) — a different axis: what the server
+- [Stateful vs stateless](<stateful-vs-stateless.md>) - a different axis: what the server
   remembers, vs. how it processes.

@@ -40,10 +40,8 @@ exactly-once - worth checking which one you're actually getting); debugging is h
 there's no direct line between "who sent this" and "who received it", you have to reason
 through the broker.
 
-🖼️ **Image needed:** a hub-and-spoke diagram - 2 publishers on the left writing to a broker
-in the middle, the broker fanning out to 3 subscribers on the right split across 2 topics
-(so it's visually clear not every subscriber gets every message). Search: "pub sub pattern
-diagram broker topics".
+🖼️ **pub sub pattern diagram broker topics**
+![pub sub pattern diagram](<../../assets/img/pub sub.png>)
 
 ## Practice project
 
